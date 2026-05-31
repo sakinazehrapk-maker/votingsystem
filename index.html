@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoteCast — Presidential Election 2025</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f7ff;
+    --card: #ffffff;
+    --surface: #f1f0f8;
+    --border: rgba(83,74,183,0.15);
+    --border-md: rgba(83,74,183,0.3);
+    --text: #1a1830;
+    --text-2: #5a5880;
+    --text-3: #9a98b8;
+    --accent: #534AB7;
+    --accent-dark: #3C3489;
+    --accent-light: #EEEDFE;
+    --green: #0F6E56;
+    --green-light: #E1F5EE;
+    --green-border: #5DCAA5;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+  }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .app {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding-bottom: 1.75rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: monospace;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: var(--accent);
+    background: var(--accent-light);
+    border: 1px solid var(--border);
+    padding: 3px 12px;
+    border-radius: 20px;
+    margin-bottom: .75rem;
+  }
+  .header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -.5px;
+    color: var(--accent);
+  }
+  .header p {
+    font-size: .85rem;
+    color: var(--text-3);
+    margin-top: .3rem;
+    letter-spacing: .3px;
+  }
+  .live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .75rem;
+    color: var(--text-2);
+    border: 1px solid var(--border);
+    padding: 3px 12px;
+    border-radius: 20px;
+    margin-top: .6rem;
+  }
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #1D9E75;
+    animation: pulse 1.8s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'Palatino Linotype', Palatino, serif;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: .72rem;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-top: .3rem;
+    font-family: monospace;
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    color: var(--text-3);
+    margin-bottom: .85rem;
+    font-family: monospace;
+  }
+
+  /* Candidate cards */
+  .candidate-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.1rem 1.25rem;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .1s;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: .7rem;
+    user-select: none;
+  }
+  .candidate-card:hover:not(.voted):not(.disabled) {
+    border-color: var(--border-md);
+    transform: translateY(-1px);
+  }
+  .candidate-card.selected {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+  .candidate-card.voted {
+    border-color: var(--green);
+    background: var(--green-light);
+    cursor: default;
+  }
+  .candidate-card.disabled {
+    cursor: default;
+    opacity: .65;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .9rem;
+    flex-shrink: 0;
+    color: #fff;
+  }
+
+  .candidate-info { flex: 1; min-width: 0; }
+  .candidate-name { font-weight: 700; font-size: 1rem; color: var(--text); }
+  .candidate-party { font-size: .78rem; color: var(--text-2); margin-top: 2px; }
+  .candidate-bio { font-size: .78rem; color: var(--text-2); margin-top: .4rem; line-height: 1.55; }
+
+  .candidate-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .radio-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--border-md);
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .candidate-card.selected .radio-circle { background: var(--accent); border-color: var(--accent); }
+  .candidate-card.voted .radio-circle { background: var(--green); border-color: var(--green); }
+  .radio-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #fff;
+    display: none;
+  }
+  .candidate-card.selected .radio-dot,
+  .candidate-card.voted .radio-dot { display: block; }
+
+  .mini-bar { width: 90px; }
+  .mini-bar-label {
+    font-size: .72rem;
+    color: var(--text-2);
+    text-align: right;
+    margin-bottom: 3px;
+    font-family: monospace;
+  }
+  .mini-bar-bg {
+    height: 6px;
+    background: rgba(83,74,183,.12);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .mini-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .5s ease;
+  }
+
+  /* Vote button */
+  .vote-btn {
+    width: 100%;
+    padding: .8rem;
+    border-radius: var(--radius-sm);
+    font-size: .95rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    margin-top: 1rem;
+    transition: background .15s, opacity .15s, transform .1s;
+    letter-spacing: .2px;
+    font-family: 'Georgia', serif;
+  }
+  .vote-btn:hover:not(:disabled) { background: var(--accent-dark); transform: translateY(-1px); }
+  .vote-btn:active:not(:disabled) { transform: scale(.98); }
+  .vote-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* Success banner */
+  .success-banner {
+    display: none;
+    background: var(--green-light);
+    border: 1px solid var(--green-border);
+    border-radius: var(--radius-sm);
+    padding: .85rem 1rem;
+    font-size: .85rem;
+    color: var(--green);
+    text-align: center;
+    margin-top: 1rem;
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20,18,50,.5);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 2rem 1.75rem;
+    width: 90%;
+    max-width: 360px;
+    text-align: center;
+    border: 1px solid var(--border);
+    animation: popIn .2s ease;
+  }
+  @keyframes popIn { from{transform:scale(.94);opacity:0} to{transform:scale(1);opacity:1} }
+  .modal-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--accent-light);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+  }
+  .modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: .5rem; }
+  .modal p { font-size: .85rem; color: var(--text-2); line-height: 1.6; margin-bottom: 1.25rem; }
+  .modal-btns { display: flex; gap: .65rem; }
+  .btn-cancel {
+    flex: 1; padding: .65rem;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: 1px solid var(--border-md);
+    font-size: .88rem; cursor: pointer;
+    color: var(--text); font-family: inherit;
+    transition: background .15s;
+  }
+  .btn-cancel:hover { background: var(--surface); }
+  .btn-confirm {
+    flex: 1; padding: .65rem;
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: #fff; border: none;
+    font-size: .88rem; font-weight: 700; cursor: pointer;
+    font-family: inherit;
+    transition: background .15s;
+  }
+  .btn-confirm:hover { background: var(--accent-dark); }
+
+  /* Divider */
+  .divider {
+    height: 1px; background: var(--border); margin: 2rem 0;
+  }
+
+  /* Results */
+  .results-heading {
+    font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: var(--text);
+  }
+
+  .winner-card {
+    background: var(--accent-light);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .winner-info { flex: 1; }
+  .winner-name { font-weight: 700; font-size: 1rem; color: var(--text); }
+  .winner-tag {
+    display: inline-block;
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--accent-dark);
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 10px;
+    margin-top: 4px;
+    font-family: monospace;
+  }
+  .winner-votes { font-size: 1.6rem; font-weight: 700; color: var(--accent); font-family: 'Palatino Linotype', Palatino, serif; }
+
+  .result-row { margin-bottom: 1rem; }
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .35rem;
+  }
+  .result-left { display: flex; align-items: center; gap: .6rem; }
+  .result-name { font-weight: 700; font-size: .88rem; }
+  .result-meta { font-size: .78rem; color: var(--text-3); font-family: monospace; }
+  .bar-bg { height: 8px; background: rgba(83,74,183,.1); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width .55s ease; }
+
+  /* Reset button */
+  .reset-wrap { text-align: center; margin-top: 1.5rem; }
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: .45rem 1rem;
+    font-size: .78rem;
+    color: var(--text-3);
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color .15s, color .15s;
+  }
+  .reset-btn:hover { border-color: var(--border-md); color: var(--text-2); }
+
+  @media (max-width: 480px) {
+    .stats { grid-template-columns: repeat(3,1fr); }
+    .stat-num { font-size: 1.4rem; }
+    .mini-bar { width: 70px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    
+    <h1>VoteCast</h1>
+    <p>Presidential Election 2025</p>
+    <div class="live-pill">
+      <span class="live-dot"></span>
+      Polls open &nbsp;&middot;&nbsp; Live counting
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num" id="s-total">32</div>
+      <div class="stat-label">Votes cast</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="s-cands">4</div>
+      <div class="stat-label">Candidates</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="s-lead" style="font-size:1rem;padding-top:.4rem">—</div>
+      <div class="stat-label">Leading</div>
+    </div>
+  </div>
+
+  <!-- Voting section -->
+  <div id="vote-section">
+    <div class="section-label">Choose a candidate</div>
+    <div id="candidate-list"></div>
+    <button class="vote-btn" id="vote-btn" disabled onclick="showConfirm()">
+      Cast My Vote &rarr;
+    </button>
+    <div class="success-banner" id="success-banner">
+      &#10003; Your vote has been recorded. Thank you for participating.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Results section -->
+  <div id="results-section">
+    <div class="results-heading">Live Results</div>
+    <div id="winner-wrap"></div>
+    <div class="section-label">All candidates</div>
+    <div id="results-list"></div>
+    <div class="reset-wrap">
+      <button class="reset-btn" onclick="resetElection()">&#8635; Reset election</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-icon">&#9989;</div>
+    <h3>Confirm your vote</h3>
+    <p>You are about to vote for <strong id="confirm-name"></strong>.<br>This action cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="hideConfirm()">Go back</button>
+      <button class="btn-confirm" onclick="submitVote()">Confirm vote</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CANDIDATES = [
+    {
+      id: 1,
+      name: 'Alexandra Moore',
+      party: 'Progressive Alliance',
+      bio: 'Former senator with 18 years of public service. Champions healthcare reform and climate policy.',
+      initials: 'AM',
+      color: '#534AB7'
+    },
+    {
+      id: 2,
+      name: 'Robert Chen',
+      party: 'Civic Unity Party',
+      bio: 'Tech entrepreneur turned statesman. Focused on economic growth and digital infrastructure.',
+      initials: 'RC',
+      color: '#993C1D'
+    },
+    {
+      id: 3,
+      name: 'Priya Sharma',
+      party: "People's Front",
+      bio: 'Constitutional lawyer and grassroots organizer. Advocates for education and social equity.',
+      initials: 'PS',
+      color: '#0F6E56'
+    },
+    {
+      id: 4,
+      name: 'James Okafor',
+      party: 'National Reform',
+      bio: "Veteran and community leader. Prioritizes veterans' affairs and small business growth.",
+      initials: 'JO',
+      color: '#633806'
+    }
+  ];
+
+  let votes = { 1: 14, 2: 10, 3: 5, 4: 3 };
+  let selected = null;
+  let hasVoted = false;
+
+  function totalVotes() {
+    return Object.values(votes).reduce((a, b) => a + b, 0);
+  }
+
+  function getLeader() {
+    return CANDIDATES.reduce((a, b) => (votes[b.id] || 0) > (votes[a.id] || 0) ? b : a);
+  }
+
+  function renderCandidates() {
+    const list = document.getElementById('candidate-list');
+    const total = totalVotes();
+    list.innerHTML = CANDIDATES.map(c => {
+      const v = votes[c.id] || 0;
+      const pct = total > 0 ? Math.round(v / total * 100) : 0;
+      const isSelected = selected === c.id;
+      const isVoted = hasVoted && selected === c.id;
+
+      let cls = 'candidate-card';
+      if (isVoted) cls += ' voted';
+      else if (isSelected) cls += ' selected';
+      else if (hasVoted) cls += ' disabled';
+
+      const barHTML = hasVoted ? `
+        <div class="mini-bar">
+          <div class="mini-bar-label">${pct}%</div>
+          <div class="mini-bar-bg">
+            <div class="mini-bar-fill" style="width:${pct}%;background:${c.color}"></div>
+          </div>
+        </div>` : '';
+
+      return `
+        <div class="${cls}" onclick="${hasVoted ? '' : 'selectCandidate(' + c.id + ')'}"
+             role="${hasVoted ? '' : 'button'}" tabindex="${hasVoted ? '-1' : '0'}"
+             onkeydown="${hasVoted ? '' : 'if(event.key===\'Enter\'||event.key===\' \')selectCandidate(' + c.id + ')'}">
+          <div class="avatar" style="background:${c.color}">${c.initials}</div>
+          <div class="candidate-info">
+            <div class="candidate-name">${c.name}</div>
+            <div class="candidate-party">${c.party}</div>
+            <div class="candidate-bio">${c.bio}</div>
+          </div>
+          <div class="candidate-right">
+            <div class="radio-circle"><div class="radio-dot"></div></div>
+            ${barHTML}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderResults() {
+    const total = totalVotes();
+    const sorted = [...CANDIDATES].sort((a, b) => (votes[b.id] || 0) - (votes[a.id] || 0));
+    const top = sorted[0];
+    const topPct = total > 0 ? Math.round((votes[top.id] || 0) / total * 100) : 0;
+
+    document.getElementById('winner-wrap').innerHTML = `
+      <div class="winner-card">
+        <div class="avatar" style="width:44px;height:44px;background:${top.color};font-size:.85rem">${top.initials}</div>
+        <div class="winner-info">
+          <div class="winner-name">${top.name}</div>
+          <span class="winner-tag">Current leader &middot; ${topPct}%</span>
+        </div>
+        <div class="winner-votes">${votes[top.id] || 0}</div>
+      </div>`;
+
+    document.getElementById('results-list').innerHTML = sorted.map(c => {
+      const v = votes[c.id] || 0;
+      const pct = total > 0 ? Math.round(v / total * 100) : 0;
+      return `
+        <div class="result-row">
+          <div class="result-header">
+            <div class="result-left">
+              <div class="avatar" style="width:26px;height:26px;font-size:.62rem;background:${c.color}">${c.initials}</div>
+              <span class="result-name">${c.name}</span>
+            </div>
+            <span class="result-meta">${v} vote${v !== 1 ? 's' : ''} &nbsp;&middot;&nbsp; ${pct}%</span>
+          </div>
+          <div class="bar-bg">
+            <div class="bar-fill" style="width:${pct}%;background:${c.color}"></div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const leader = getLeader();
+    document.getElementById('s-total').textContent = total;
+    document.getElementById('s-lead').textContent = leader.initials;
+  }
+
+  function selectCandidate(id) {
+    if (hasVoted) return;
+    selected = id;
+    document.getElementById('vote-btn').disabled = false;
+    renderCandidates();
+  }
+
+  function showConfirm() {
+    if (!selected || hasVoted) return;
+    const c = CANDIDATES.find(x => x.id === selected);
+    document.getElementById('confirm-name').textContent = c.name;
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function hideConfirm() {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+
+  function submitVote() {
+    hideConfirm();
+    votes[selected] = (votes[selected] || 0) + 1;
+    hasVoted = true;
+    document.getElementById('vote-btn').style.display = 'none';
+    document.getElementById('success-banner').style.display = 'block';
+    renderCandidates();
+    renderResults();
+  }
+
+  function resetElection() {
+    votes = { 1: 14, 2: 10, 3: 5, 4: 3 };
+    selected = null;
+    hasVoted = false;
+    document.getElementById('vote-btn').style.display = 'block';
+    document.getElementById('vote-btn').disabled = true;
+    document.getElementById('success-banner').style.display = 'none';
+    renderCandidates();
+    renderResults();
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) hideConfirm();
+  });
+
+  // Initial render
+  renderCandidates();
+  renderResults();
+</script>
+</body>
+</html>
